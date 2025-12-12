@@ -79,11 +79,11 @@ const UI = {
         const buttons = this.selectors.desktopFilters.querySelectorAll('button');
         buttons.forEach(btn => {
             if (btn.dataset.filter === filter) {
-                btn.classList.add('bg-primary/10', 'text-primary');
-                btn.classList.remove('text-text-secondary', 'hover:bg-gray-50');
+                btn.classList.add('bg-primary', 'text-white', 'shadow-md', 'shadow-primary/25');
+                btn.classList.remove('text-text-secondary', 'hover:bg-slate-50', 'bg-transparent');
             } else {
-                btn.classList.remove('bg-primary/10', 'text-primary');
-                btn.classList.add('text-text-secondary', 'hover:bg-gray-50');
+                btn.classList.remove('bg-primary', 'text-white', 'shadow-md', 'shadow-primary/25');
+                btn.classList.add('text-text-secondary', 'hover:bg-slate-50', 'bg-transparent');
             }
         });
 
@@ -124,12 +124,18 @@ const UI = {
 
         if (filteredTasks.length === 0) {
             this.selectors.taskList.innerHTML = `
-                <div class="text-center py-12 bg-white rounded-xl shadow-sm">
-                    <div class="bg-gray-100 p-4 rounded-full inline-block mb-4">
-                        <i data-lucide="clipboard-x" class="h-8 w-8 text-gray-400"></i>
+                <div class="text-center py-16 bg-white rounded-2xl shadow-sm ring-1 ring-slate-100">
+                    <div class="bg-slate-50 p-6 rounded-full inline-block mb-6 relative">
+                        <i data-lucide="clipboard-x" class="h-12 w-12 text-slate-300"></i>
+                        <div class="absolute bottom-0 right-0 p-1.5 bg-primary rounded-full border-2 border-white">
+                            <i data-lucide="search" class="h-4 w-4 text-white"></i>
+                        </div>
                     </div>
-                    <h3 class="text-lg font-medium text-text">Inga uppgifter hittades</h3>
-                    <p class="text-text-secondary">Justera filtret eller skapa en ny uppgift.</p>
+                    <h3 class="text-xl font-bold text-text tracking-tight mb-2">Inga uppgifter hittades</h3>
+                    <p class="text-text-secondary max-w-xs mx-auto">Vi kunde inte hitta några uppgifter som matchar ditt valda filter.</p>
+                    <button class="mt-6 text-primary font-medium hover:text-primary-dark transition-colors" onclick="document.querySelector('[data-filter=all]').click()">
+                        Rensa filter
+                    </button>
                 </div>
             `;
         }
@@ -144,71 +150,76 @@ const UI = {
 
     createTaskCard(task) {
         const div = document.createElement('div');
-        div.className = 'bg-white rounded-xl shadow-sm p-4 sm:p-6 border-l-4 transition-transform hover:scale-[1.01] animate-fade-in relative';
+        div.className = 'bg-white rounded-2xl shadow-sm ring-1 ring-slate-100 p-6 transition-all duration-300 hover:shadow-xl hover:shadow-blue-900/5 hover:-translate-y-1 group animate-fade-in relative overflow-hidden';
 
-        // Status Border Color
+        // Status Colors (for dots/badges instead of border)
         const statusColors = {
-            'unresolved': 'border-red-500',
-            'in-progress': 'border-yellow-500',
-            'completed': 'border-green-500',
-            'overdue': 'border-purple-500'
+            'unresolved': 'bg-red-500',
+            'in-progress': 'bg-amber-500',
+            'completed': 'bg-emerald-500',
+            'overdue': 'bg-purple-500'
         };
-        div.classList.add(statusColors[task.status] || 'border-gray-300');
+        const statusDot = statusColors[task.status] || 'bg-slate-300';
 
         // Progress Color
-        let progressColor = '#3498db';
-        if (task.progress === 100) progressColor = '#27ae60';
-        else if (task.progress < 20) progressColor = '#e74c3c';
+        let progressColor = '#2563eb'; // primary
+        if (task.progress === 100) progressColor = '#10b981'; // success
+        else if (task.progress < 20) progressColor = '#ef4444'; // danger
 
         const daysLeft = this.calculateDaysLeft(task.deadline);
         const daysLeftClass = daysLeft < 0 ? 'text-danger font-bold' : (daysLeft <= 2 ? 'text-accent font-bold' : 'text-text-secondary');
         const daysLeftText = daysLeft < 0 ? 'Försenad!' : (daysLeft === 0 ? 'Idag!' : `${daysLeft} dagar kvar`);
 
         div.innerHTML = `
-            <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            <div class="flex flex-col sm:flex-row gap-6 items-start sm:items-center relative z-10">
                 <!-- Progress -->
-                <div class="progress-ring shrink-0" style="--progress: ${task.progress}%; --progress-color: ${progressColor}">
-                    <span class="progress-ring-text">${task.progress}%</span>
+                <div class="progress-ring shrink-0 scale-110" style="--progress: ${task.progress}%; --progress-color: ${progressColor}">
+                    <span class="progress-ring-text text-text font-bold">${task.progress}%</span>
                 </div>
 
                 <!-- Content -->
                 <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="category-badge category-${task.category} flex items-center gap-1">
-                            <i data-lucide="${this.icons[task.category] || this.icons.default}" class="h-3 w-3"></i>
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="category-badge category-${task.category} flex items-center gap-1.5 py-1 px-2.5 rounded-lg shadow-sm">
+                            <i data-lucide="${this.icons[task.category] || this.icons.default}" class="h-3.5 w-3.5"></i>
                             ${this.categoryLabels[task.category]}
                         </span>
-                        <span class="text-xs text-text-secondary flex items-center gap-1">
-                            <i data-lucide="calendar" class="h-3 w-3"></i> ${task.deadline}
-                        </span>
+                        <div class="flex items-center gap-1.5 text-xs text-text-secondary font-medium">
+                            <div class="w-1.5 h-1.5 rounded-full ${statusDot}"></div>
+                            <span class="capitalize">${task.status === 'in-progress' ? 'Pågående' : (task.status === 'unresolved' ? 'Ej påbörjad' : task.status)}</span>
+                        </div>
                     </div>
-                    <h3 class="text-lg font-bold text-text truncate pr-8">${task.title}</h3>
-                    <p class="text-text-secondary text-sm line-clamp-2">${task.description}</p>
                     
-                    <div class="flex items-center gap-4 mt-3 text-sm">
-                        <span class="${daysLeftClass} flex items-center gap-1">
-                            <i data-lucide="clock" class="h-3 w-3"></i> ${daysLeftText}
+                    <h3 class="text-xl font-bold text-text truncate pr-8 tracking-tight mb-1 group-hover:text-primary transition-colors">${task.title}</h3>
+                    <p class="text-text-secondary text-sm line-clamp-2 leading-relaxed mb-4">${task.description}</p>
+                    
+                    <div class="flex items-center gap-6 text-sm border-t border-slate-50 pt-3 mt-1">
+                        <span class="text-text-secondary flex items-center gap-2">
+                            <i data-lucide="calendar" class="h-4 w-4 text-slate-400"></i> ${task.deadline}
                         </span>
-                        <span class="text-text-secondary flex items-center gap-1">
-                            <i data-lucide="hourglass" class="h-3 w-3"></i> ${task.estimatedTime} min
+                        <span class="${daysLeftClass} flex items-center gap-2">
+                            <i data-lucide="clock" class="h-4 w-4 ${daysLeft < 0 ? 'text-danger' : 'text-slate-400'}"></i> ${daysLeftText}
+                        </span>
+                        <span class="text-text-secondary flex items-center gap-2">
+                            <i data-lucide="hourglass" class="h-4 w-4 text-slate-400"></i> ${task.estimatedTime} min
                         </span>
                     </div>
                 </div>
 
                 <!-- Actions -->
-                <div class="flex items-center gap-2 self-end sm:self-center w-full sm:w-auto mt-2 sm:mt-0 justify-end">
-                    <button class="p-2 text-text-secondary hover:text-primary transition-colors btn-edit" data-id="${task.id}">
+                <div class="flex items-center gap-2 self-end sm:self-center w-full sm:w-auto mt-2 sm:mt-0 justify-end opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
+                    <button class="p-2.5 text-text-secondary hover:text-primary hover:bg-blue-50 rounded-xl transition-all btn-edit hover:scale-105 active:scale-95" data-id="${task.id}" title="Redigera">
                         <i data-lucide="edit-2" class="h-5 w-5"></i>
                     </button>
                     ${task.status !== 'completed' ? `
-                    <button class="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-lg text-sm font-medium transition-colors btn-complete" data-id="${task.id}">
-                        Klarmarkera
+                    <button class="px-4 py-2 bg-primary text-white hover:bg-primary-dark rounded-xl text-sm font-semibold transition-all shadow-md shadow-primary/20 hover:shadow-lg hover:-translate-y-0.5 btn-complete hover:scale-105 active:scale-95 flex items-center gap-2" data-id="${task.id}">
+                        <i data-lucide="check" class="h-4 w-4"></i> Klart
                     </button>` : `
-                    <button class="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-medium cursor-default">
-                        <i data-lucide="check" class="h-4 w-4 inline mr-1"></i> Klar
+                    <button class="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-xl text-sm font-semibold cursor-default flex items-center gap-2">
+                        <i data-lucide="check-circle" class="h-4 w-4"></i> Färdig
                     </button>
                     `}
-                    <button class="p-2 text-text-secondary hover:text-danger transition-colors btn-delete" data-id="${task.id}">
+                    <button class="p-2.5 text-text-secondary hover:text-danger hover:bg-red-50 rounded-xl transition-all btn-delete hover:scale-105 active:scale-95" data-id="${task.id}" title="Ta bort">
                         <i data-lucide="trash-2" class="h-5 w-5"></i>
                     </button>
                 </div>

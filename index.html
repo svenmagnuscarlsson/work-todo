@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html lang="sv">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Garda Security Todo</title>
-    
+    <title>MACA Todo</title>
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <!-- Tailwind CSS (v3.4 via CDN for instant setup) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -20,16 +21,16 @@
                         sans: ['Inter', 'sans-serif'],
                     },
                     colors: {
-                        primary: '#3498db',
-                        'primary-dark': '#2980b9',
-                        accent: '#e67e22',
-                        'accent-dark': '#d35400',
-                        success: '#27ae60',
-                        danger: '#e74c3c',
-                        background: '#f5f6fa',
+                        primary: '#2563eb', /* Modern Blue-600 */
+                        'primary-dark': '#1d4ed8', /* Blue-700 */
+                        accent: '#f97316', /* Orange-500 */
+                        'accent-dark': '#ea580c', /* Orange-600 */
+                        success: '#10b981', /* Emerald-500 */
+                        danger: '#ef4444', /* Red-500 */
+                        background: '#f8fafc', /* Slate-50 */
                         card: '#ffffff',
-                        text: '#2c3e50',
-                        'text-secondary': '#7f8c8d'
+                        text: '#0f172a', /* Slate-900 */
+                        'text-secondary': '#64748b' /* Slate-500 */
                     }
                 }
             }
@@ -37,28 +38,111 @@
     </script>
 
     <!-- Custom Styles -->
-    <link rel="stylesheet" href="css/styles.css">
+    <!-- Custom Styles (Inlined for Tailwind CDN @apply support) -->
+    <style type="text/tailwindcss">
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* Circular Progress Bar using Conic Gradient */
+        .progress-ring {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: conic-gradient(var(--progress-color) var(--progress), #e2e8f0 0deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .progress-ring::before {
+            content: "";
+            width: 38px;
+            height: 38px;
+            background-color: white;
+            border-radius: 50%;
+            position: absolute;
+        }
+        
+        .progress-ring-text {
+            position: relative;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        
+        /* Category Badges */
+        .category-badge {
+            @apply px-2 py-1 rounded-md text-xs font-medium uppercase tracking-wide;
+        }
+        
+        .category-camera { @apply bg-blue-100 text-blue-700; }
+        .category-fire { @apply bg-red-100 text-red-700; }
+        .category-intrusion { @apply bg-yellow-100 text-yellow-700; }
+        .category-access { @apply bg-green-100 text-green-700; }
+        .category-lock { @apply bg-gray-100 text-gray-700; }
+        
+        /* Status Indicators */
+        .status-indicator {
+            @apply w-2 h-2 rounded-full;
+        }
+        
+        .status-unresolved { @apply bg-red-500; }
+        .status-in-progress { @apply bg-yellow-500; }
+        .status-completed { @apply bg-green-500; }
+        .status-overdue { @apply bg-purple-500; }
+    </style>
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
+
 <body class="bg-background text-text font-sans antialiased min-h-screen flex flex-col">
 
     <!-- Header / Navbar -->
-    <header class="bg-white shadow-sm sticky top-0 z-40">
+    <header
+        class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-40 transition-all duration-300">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center gap-2">
-                <div class="bg-primary/10 p-2 rounded-lg">
+                <div class="bg-primary/10 p-2 rounded-xl">
                     <i data-lucide="shield-check" class="text-primary h-6 w-6"></i>
                 </div>
-                <h1 class="text-xl font-bold tracking-tight">Garda <span class="text-primary">Tech</span></h1>
+                <h1 class="text-xl font-bold tracking-tight text-text">Maca<span class="text-primary">ToDo</span></h1>
             </div>
             <div class="flex items-center gap-4">
-                <button class="p-2 text-text-secondary hover:text-primary transition-colors relative">
+                <button
+                    class="p-2 text-text-secondary hover:text-primary transition-colors relative hover:scale-105 active:scale-95 duration-200">
                     <i data-lucide="bell" class="h-5 w-5"></i>
-                    <span class="absolute top-1.5 right-1.5 h-2 w-2 bg-danger rounded-full"></span>
+                    <span class="absolute top-1.5 right-1.5 h-2 w-2 bg-danger rounded-full ring-2 ring-white"></span>
                 </button>
-                <div class="h-8 w-8 bg-primary rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                <div
+                    class="h-9 w-9 bg-primary rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md shadow-primary/20 hover:scale-105 transition-transform duration-200 cursor-pointer">
                     MC
                 </div>
             </div>
@@ -67,54 +151,67 @@
 
     <!-- Main Content -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        <!-- Sidebar / Statistics (Desktop: Left, Mobile: Top) -->
-        <aside class="lg:col-span-3 space-y-6">
-            <!-- Stats Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-4">
-                <!-- Stat 1: Projects -->
-                <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-primary flex items-center justify-between">
-                    <div>
-                        <p class="text-xs text-text-secondary font-medium uppercase tracking-wider">Projekt</p>
-                        <p class="text-2xl font-bold mt-1" id="stat-projects">0</p>
-                    </div>
-                    <div class="bg-primary/10 p-2 rounded-lg">
-                        <i data-lucide="folder" class="text-primary h-5 w-5"></i>
-                    </div>
-                </div>
 
-                <!-- Stat 2: Active Tasks -->
-                <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-gray-400 flex items-center justify-between">
-                    <div>
-                        <p class="text-xs text-text-secondary font-medium uppercase tracking-wider">Pågående</p>
-                        <p class="text-2xl font-bold mt-1" id="stat-active">0</p>
+        <!-- Stats Grid (Full Width Top) -->
+        <div class="lg:col-span-12 grid grid-cols-3 gap-3 md:gap-6">
+            <!-- Stat 1: Projects -->
+            <div
+                class="bg-white p-3 md:p-6 rounded-2xl shadow-sm ring-1 ring-slate-100 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-blue-50 p-2.5 rounded-xl group-hover:bg-blue-100 transition-colors">
+                        <i data-lucide="folder" class="text-primary h-6 w-6"></i>
                     </div>
-                    <div class="bg-gray-100 p-2 rounded-lg">
-                        <i data-lucide="activity" class="text-gray-500 h-5 w-5"></i>
-                    </div>
+                    <span class="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">+2%</span>
                 </div>
-
-                <!-- Stat 3: Total Tasks -->
-                <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-accent flex items-center justify-between">
-                    <div>
-                        <p class="text-xs text-text-secondary font-medium uppercase tracking-wider">Totalt</p>
-                        <p class="text-2xl font-bold mt-1" id="stat-total">0</p>
-                    </div>
-                    <div class="bg-accent/10 p-2 rounded-lg">
-                        <i data-lucide="clipboard-list" class="text-accent h-5 w-5"></i>
-                    </div>
+                <div>
+                    <p class="text-sm text-text-secondary font-medium uppercase tracking-wide">Projekt</p>
+                    <p class="text-3xl font-bold text-text mt-1 tracking-tight" id="stat-projects">0</p>
                 </div>
             </div>
 
+            <!-- Stat 2: Active Tasks -->
+            <div
+                class="bg-white p-3 md:p-6 rounded-2xl shadow-sm ring-1 ring-slate-100 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-orange-50 p-2.5 rounded-xl group-hover:bg-orange-100 transition-colors">
+                        <i data-lucide="activity" class="text-orange-500 h-6 w-6"></i>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-sm text-text-secondary font-medium uppercase tracking-wide">Pågående</p>
+                    <p class="text-3xl font-bold text-text mt-1 tracking-tight" id="stat-active">0</p>
+                </div>
+            </div>
+
+            <!-- Stat 3: Total Tasks -->
+            <div
+                class="bg-white p-3 md:p-6 rounded-2xl shadow-sm ring-1 ring-slate-100 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-purple-50 p-2.5 rounded-xl group-hover:bg-purple-100 transition-colors">
+                        <i data-lucide="clipboard-list" class="text-purple-500 h-6 w-6"></i>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-sm text-text-secondary font-medium uppercase tracking-wide">Totalt</p>
+                    <p class="text-3xl font-bold text-text mt-1 tracking-tight" id="stat-total">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar / Filters (Desktop: Left) -->
+        <aside class="lg:col-span-3 space-y-6">
+
             <!-- Filters (Desktop Sticky) -->
-            <div class="bg-white rounded-xl shadow-sm p-4 hidden lg:block sticky top-24">
-                <h3 class="font-semibold mb-4 flex items-center gap-2">
+            <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-100 p-6 hidden lg:block sticky top-24">
+                <h3 class="font-bold text-text mb-4 flex items-center gap-2 tracking-tight">
                     <i data-lucide="filter" class="h-4 w-4"></i> Filter
                 </h3>
-                <nav class="space-y-1" id="category-filters-desktop">
-                    <button data-filter="all" class="w-full text-left px-3 py-2 rounded-lg bg-primary/10 text-primary font-medium text-sm flex items-center justify-between group">
+                <nav class="space-y-2" id="category-filters-desktop">
+                    <button data-filter="all"
+                        class="w-full text-left px-4 py-3 rounded-xl bg-primary/10 text-primary font-medium text-sm flex items-center justify-between group transition-all">
                         <span>Alla uppgifter</span>
-                        <span class="bg-white text-primary px-2 py-0.5 rounded-full text-xs shadow-sm" id="count-all">0</span>
+                        <span class="bg-white text-primary px-2 py-0.5 rounded-lg text-xs shadow-sm font-bold"
+                            id="count-all">0</span>
                     </button>
                     <!-- Categories injected by JS -->
                 </nav>
@@ -124,17 +221,22 @@
         <!-- Task Feed -->
         <section class="lg:col-span-9 space-y-6">
             <!-- Feed Header -->
-            <div class="flex items-center justify-between">
-                <h2 class="text-2xl font-bold text-text">Aktivitetsflöde</h2>
-                <button id="btn-add-task" class="bg-accent hover:bg-accent-dark text-white px-4 py-2 rounded-lg shadow-md shadow-accent/20 transition-all flex items-center gap-2 font-medium">
-                    <i data-lucide="plus" class="h-4 w-4"></i>
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h2 class="text-3xl font-bold text-text tracking-tight">Aktivitetsflöde</h2>
+                    <p class="text-text-secondary mt-1">Hantera dina installationer och servicejobb.</p>
+                </div>
+                <button id="btn-add-task"
+                    class="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center gap-2 font-semibold">
+                    <i data-lucide="plus" class="h-5 w-5"></i>
                     <span class="hidden sm:inline">Ny Uppgift</span>
                 </button>
             </div>
 
             <!-- Mobile Filter Toggle (Visible only on mobile/tablet) -->
             <div class="lg:hidden">
-                <select id="mobile-filter" class="w-full bg-white border border-gray-200 text-text text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5">
+                <select id="mobile-filter"
+                    class="w-full bg-white border border-gray-200 text-text text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5">
                     <option value="all">Alla Kategorier</option>
                     <option value="camera">Kamera / CCTV</option>
                     <option value="fire">Brand</option>
@@ -145,7 +247,7 @@
             </div>
 
             <!-- Task List -->
-            <div id="task-list" class="space-y-4">
+            <div id="task-list" class="space-y-6">
                 <!-- Tasks will be injected here -->
                 <div class="text-center py-12 text-text-secondary">
                     <i data-lucide="loader-2" class="h-8 w-8 animate-spin mx-auto mb-2"></i>
@@ -156,8 +258,10 @@
     </main>
 
     <!-- Add/Edit Task Modal -->
-    <div id="task-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-200">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg transform scale-95 transition-transform duration-200" id="task-modal-content">
+    <div id="task-modal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg transform scale-95 transition-transform duration-200"
+            id="task-modal-content">
             <div class="p-6 border-b border-gray-100 flex items-center justify-between">
                 <h3 class="text-lg font-bold text-text" id="modal-title">Ny Uppgift</h3>
                 <button id="btn-close-modal" class="text-gray-400 hover:text-text transition-colors">
@@ -166,15 +270,19 @@
             </div>
             <form id="task-form" class="p-6 space-y-4">
                 <input type="hidden" id="task-id">
-                
+
                 <div>
                     <label class="block text-sm font-medium text-text-secondary mb-1">Titel</label>
-                    <input type="text" id="task-title" required class="w-full rounded-lg border-gray-200 focus:border-primary focus:ring-primary" placeholder="t.ex. Installation Kamera L1">
+                    <input type="text" id="task-title" required
+                        class="w-full rounded-lg border-gray-200 focus:border-primary focus:ring-primary"
+                        placeholder="t.ex. Installation Kamera L1">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-text-secondary mb-1">Beskrivning</label>
-                    <textarea id="task-desc" rows="3" class="w-full rounded-lg border-gray-200 focus:border-primary focus:ring-primary" placeholder="Detaljer om uppdraget..."></textarea>
+                    <textarea id="task-desc" rows="3"
+                        class="w-full rounded-lg border-gray-200 focus:border-primary focus:ring-primary"
+                        placeholder="Detaljer om uppdraget..."></textarea>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
@@ -182,7 +290,8 @@
                         <label class="block text-sm font-medium text-text-secondary mb-1">Kategori</label>
                         <div class="relative">
                             <i data-lucide="tag" class="absolute left-3 top-3 h-4 w-4 text-gray-400"></i>
-                            <select id="task-category" class="w-full pl-9 rounded-lg border-gray-200 focus:border-primary focus:ring-primary appearance-none">
+                            <select id="task-category"
+                                class="w-full pl-9 rounded-lg border-gray-200 focus:border-primary focus:ring-primary appearance-none">
                                 <option value="camera">Kamera</option>
                                 <option value="fire">Brand</option>
                                 <option value="intrusion">Inbrott</option>
@@ -195,7 +304,8 @@
                         <label class="block text-sm font-medium text-text-secondary mb-1">Deadline</label>
                         <div class="relative">
                             <i data-lucide="calendar" class="absolute left-3 top-3 h-4 w-4 text-gray-400"></i>
-                            <input type="date" id="task-deadline" required class="w-full pl-9 rounded-lg border-gray-200 focus:border-primary focus:ring-primary">
+                            <input type="date" id="task-deadline" required
+                                class="w-full pl-9 rounded-lg border-gray-200 focus:border-primary focus:ring-primary">
                         </div>
                     </div>
                 </div>
@@ -205,19 +315,24 @@
                         <label class="block text-sm font-medium text-text-secondary mb-1">Estimerad Tid (min)</label>
                         <div class="relative">
                             <i data-lucide="clock" class="absolute left-3 top-3 h-4 w-4 text-gray-400"></i>
-                            <input type="number" id="task-time" placeholder="60" class="w-full pl-9 rounded-lg border-gray-200 focus:border-primary focus:ring-primary">
+                            <input type="number" id="task-time" placeholder="60"
+                                class="w-full pl-9 rounded-lg border-gray-200 focus:border-primary focus:ring-primary">
                         </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-text-secondary mb-1">Nuvarande Progress</label>
-                        <input type="range" id="task-progress" min="0" max="100" step="5" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-3">
+                        <input type="range" id="task-progress" min="0" max="100" step="5" value="0"
+                            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-3">
                         <div class="text-right text-xs text-text-secondary mt-1"><span id="progress-val">0</span>%</div>
                     </div>
                 </div>
 
                 <div class="pt-4 flex justify-end gap-3">
-                    <button type="button" id="btn-cancel-modal" class="px-4 py-2 text-sm font-medium text-text-secondary hover:bg-gray-50 rounded-lg transition-colors">Avbryt</button>
-                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-dark rounded-lg shadow-sm transition-colors">Spara Uppgift</button>
+                    <button type="button" id="btn-cancel-modal"
+                        class="px-4 py-2 text-sm font-medium text-text-secondary hover:bg-gray-50 rounded-lg transition-colors">Avbryt</button>
+                    <button type="submit"
+                        class="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-dark rounded-lg shadow-sm transition-colors">Spara
+                        Uppgift</button>
                 </div>
             </form>
         </div>
@@ -228,4 +343,5 @@
     <script src="js/ui.js"></script>
     <script src="js/app.js"></script>
 </body>
+
 </html>
