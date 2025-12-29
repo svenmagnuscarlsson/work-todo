@@ -22,11 +22,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
 
         const id = document.getElementById('task-id').value;
+        const title = document.getElementById('task-title').value;
+        const deadline = document.getElementById('task-deadline').value;
+
+        // Validation
+        if (!title.trim()) {
+            alert('Vänligen fyll i en titel för uppgiften.');
+            document.getElementById('task-title').focus();
+            return;
+        }
+
+        if (!deadline) {
+            alert('Vänligen välj en deadline för uppgiften.');
+            document.getElementById('task-deadline').focus();
+            return;
+        }
+
         const task = {
-            title: document.getElementById('task-title').value,
+            title: title,
             description: document.getElementById('task-desc').value,
             category: document.getElementById('task-category').value,
-            deadline: document.getElementById('task-deadline').value,
+            deadline: deadline,
             estimatedTime: Number(document.getElementById('task-time').value),
             progress: Number(document.getElementById('task-progress').value),
             status: 'in-progress' // default, but logic below refines it
@@ -91,6 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             UI.renderTasks(tasks);
         } catch (error) {
             console.error("Failed to load tasks", error);
+            UI.showError("Kunde inte ladda uppgifter från databasen. Kontrollera att din webbläsare tillåter lokal lagring.");
         }
     }
 });

@@ -37,39 +37,76 @@ const UI = {
 
     currentFilter: 'all',
 
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    },
+
     init() {
+        if (!this.validateSelectors()) {
+            console.error('UI initialization aborted due to missing DOM elements.');
+            return;
+        }
         this.setupEventListeners();
         this.renderFilters();
     },
 
+    validateSelectors() {
+        const required = ['taskList', 'btnAddTask', 'taskForm', 'modal'];
+        let allFound = true;
+        for (const key of required) {
+            if (!this.selectors[key]) {
+                console.warn(`Required selector missing: ${key}`);
+                allFound = false;
+            }
+        }
+        return allFound;
+    },
+
     setupEventListeners() {
         // Modal Logic
-        this.selectors.btnAddTask.addEventListener('click', () => this.openModal());
-        this.selectors.btnCloseModal.addEventListener('click', () => this.closeModal());
-        this.selectors.btnCancelModal.addEventListener('click', () => this.closeModal());
+        if (this.selectors.btnAddTask) {
+            this.selectors.btnAddTask.addEventListener('click', () => this.openModal());
+        }
+        if (this.selectors.btnCloseModal) {
+            this.selectors.btnCloseModal.addEventListener('click', () => this.closeModal());
+        }
+        if (this.selectors.btnCancelModal) {
+            this.selectors.btnCancelModal.addEventListener('click', () => this.closeModal());
+        }
 
         // Close modal on outside click
-        this.selectors.modal.addEventListener('click', (e) => {
-            if (e.target === this.selectors.modal) this.closeModal();
-        });
+        if (this.selectors.modal) {
+            this.selectors.modal.addEventListener('click', (e) => {
+                if (e.target === this.selectors.modal) this.closeModal();
+            });
+        }
 
         // Progress slider update
-        this.selectors.progressInput.addEventListener('input', (e) => {
-            this.selectors.progressVal.textContent = e.target.value;
-        });
+        if (this.selectors.progressInput && this.selectors.progressVal) {
+            this.selectors.progressInput.addEventListener('input', (e) => {
+                this.selectors.progressVal.textContent = e.target.value;
+            });
+        }
 
         // Filter Logic (Desktop)
-        this.selectors.desktopFilters.addEventListener('click', (e) => {
-            const btn = e.target.closest('button');
-            if (!btn) return;
-            const filter = btn.dataset.filter;
-            this.setFilter(filter);
-        });
+        if (this.selectors.desktopFilters) {
+            this.selectors.desktopFilters.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const filter = btn.dataset.filter;
+                this.setFilter(filter);
+            });
+        }
 
         // Filter Logic (Mobile)
-        this.selectors.mobileFilter.addEventListener('change', (e) => {
-            this.setFilter(e.target.value);
-        });
+        if (this.selectors.mobileFilter) {
+            this.selectors.mobileFilter.addEventListener('change', (e) => {
+                this.setFilter(e.target.value);
+            });
+        }
     },
 
     setFilter(filter) {
@@ -88,7 +125,9 @@ const UI = {
         });
 
         // Update Mobile UI
-        this.selectors.mobileFilter.value = filter;
+        if (this.selectors.mobileFilter) {
+            this.selectors.mobileFilter.value = filter;
+        }
 
         // Re-render tasks
         document.dispatchEvent(new CustomEvent('filter-changed', { detail: filter }));
@@ -101,9 +140,9 @@ const UI = {
         // Let's count unique categories as "active types of projects"
         const projects = new Set(tasks.map(t => t.category)).size;
 
-        this.selectors.statTotal.textContent = total;
-        this.selectors.statActive.textContent = active;
-        this.selectors.statProjects.textContent = projects;
+        if (this.selectors.statTotal) this.selectors.statTotal.textContent = total;
+        if (this.selectors.statActive) this.selectors.statActive.textContent = active;
+        if (this.selectors.statProjects) this.selectors.statProjects.textContent = projects;
     },
 
     renderFilters(tasks = []) {
@@ -145,6 +184,24 @@ const UI = {
             this.selectors.taskList.appendChild(card);
         });
 
+        lucide.createIcons();
+    },
+
+    showError(message) {
+        if (!this.selectors.taskList) return;
+
+        this.selectors.taskList.innerHTML = `
+            <div class="text-center py-16 bg-white rounded-2xl shadow-sm ring-1 ring-red-100 animate-fade-in">
+                <div class="bg-red-50 p-6 rounded-full inline-block mb-6 relative">
+                    <i data-lucide="alert-circle" class="h-12 w-12 text-red-500"></i>
+                </div>
+                <h3 class="text-xl font-bold text-text tracking-tight mb-2">Ett fel uppstod</h3>
+                <p class="text-text-secondary max-w-xs mx-auto mb-6">${this.escapeHtml(message)}</p>
+                <button class="px-6 py-2 bg-primary text-white rounded-xl shadow-md hover:bg-primary-dark transition-all" onclick="location.reload()">
+                    Ladda om sidan
+                </button>
+            </div>
+        `;
         lucide.createIcons();
     },
 
@@ -190,8 +247,8 @@ const UI = {
                         </div>
                     </div>
                     
-                    <h3 class="text-xl font-bold text-text truncate pr-8 tracking-tight mb-1 group-hover:text-primary transition-colors">${task.title}</h3>
-                    <p class="text-text-secondary text-sm line-clamp-2 leading-relaxed mb-4">${task.description}</p>
+                    <h3 class="text-xl font-bold text-text truncate pr-8 tracking-tight mb-1 group-hover:text-primary transition-colors">${this.escapeHtml(task.title)}</h3>
+                    <p class="text-text-secondary text-sm line-clamp-2 leading-relaxed mb-4">${this.escapeHtml(task.description)}</p>
                     
                     <div class="flex items-center gap-6 text-sm border-t border-slate-50 pt-3 mt-1">
                         <span class="text-text-secondary flex items-center gap-2">
