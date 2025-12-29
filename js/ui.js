@@ -15,7 +15,13 @@ const UI = {
         btnCancelModal: document.getElementById('btn-cancel-modal'),
         taskForm: document.getElementById('task-form'),
         progressInput: document.getElementById('task-progress'),
-        progressVal: document.getElementById('progress-val')
+        progressVal: document.getElementById('progress-val'),
+        errorTitle: document.getElementById('error-title'),
+        errorDeadline: document.getElementById('error-deadline'),
+        toastContainer: document.getElementById('toast-container'),
+        btnSaveTask: document.getElementById('btn-save-task'),
+        btnSaveText: document.getElementById('btn-save-text'),
+        btnSaveLoader: document.getElementById('btn-save-loader')
     },
 
     icons: {
@@ -28,11 +34,11 @@ const UI = {
     },
 
     categoryLabels: {
-        camera: 'Kamera / CCTV',
+        camera: 'Kamera',
         fire: 'Brand',
-        intrusion: 'Inbrott / Larm',
-        access: 'Passage / Dörr',
-        lock: 'Lås / Mekaniskt'
+        intrusion: 'Inbrott',
+        access: 'Passage',
+        lock: 'Lås'
     },
 
     currentFilter: 'all',
@@ -42,6 +48,16 @@ const UI = {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    },
+
+    formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return new Intl.DateTimeFormat('sv-SE', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        }).format(date);
     },
 
     init() {
@@ -82,6 +98,13 @@ const UI = {
             this.selectors.modal.addEventListener('click', (e) => {
                 if (e.target === this.selectors.modal) this.closeModal();
             });
+
+            // Close modal on escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !this.selectors.modal.classList.contains('hidden')) {
+                    this.closeModal();
+                }
+            });
         }
 
         // Progress slider update
@@ -107,6 +130,27 @@ const UI = {
                 this.setFilter(e.target.value);
             });
         }
+
+        // Stats Card Filtering
+        if (this.selectors.statProjects) {
+            const projectCard = this.selectors.statProjects.parentElement;
+            projectCard.addEventListener('click', () => this.setFilter('all'));
+            projectCard.style.cursor = 'pointer';
+        }
+        if (this.selectors.statActive) {
+            const activeCard = this.selectors.statActive.parentElement;
+            activeCard.addEventListener('click', () => {
+                document.dispatchEvent(new CustomEvent('filter-status', { detail: 'active' }));
+            });
+            activeCard.style.cursor = 'pointer';
+        }
+        if (this.selectors.statTotal) {
+            const totalCard = this.selectors.statTotal.parentElement;
+            totalCard.addEventListener('click', () => {
+                document.dispatchEvent(new CustomEvent('filter-status', { detail: 'completed' }));
+            });
+            totalCard.style.cursor = 'pointer';
+        }
     },
 
     setFilter(filter) {
@@ -116,11 +160,11 @@ const UI = {
         const buttons = this.selectors.desktopFilters.querySelectorAll('button');
         buttons.forEach(btn => {
             if (btn.dataset.filter === filter) {
-                btn.classList.add('bg-primary', 'text-white', 'shadow-md', 'shadow-primary/25');
-                btn.classList.remove('text-text-secondary', 'hover:bg-slate-50', 'bg-transparent');
+                btn.classList.add('bg-teal-50', 'text-teal-700', 'font-bold');
+                btn.classList.remove('text-slate-500', 'hover:bg-slate-50');
             } else {
-                btn.classList.remove('bg-primary', 'text-white', 'shadow-md', 'shadow-primary/25');
-                btn.classList.add('text-text-secondary', 'hover:bg-slate-50', 'bg-transparent');
+                btn.classList.remove('bg-teal-50', 'text-teal-700', 'font-bold');
+                btn.classList.add('text-slate-500', 'hover:bg-slate-50');
             }
         });
 
@@ -135,23 +179,37 @@ const UI = {
 
     renderStats(tasks) {
         const total = tasks.length;
-        const active = tasks.filter(t => t.status === 'in-progress' || t.status === 'unresolved').length;
-        // Assume 'Projects' are unique locations or categories for now, or just placeholders. 
-        // Let's count unique categories as "active types of projects"
+        const active = tasks.filter(t => t.status === 'in-progress' || t.status === 'unresolved' || t.status === 'overdue').length;
+        const completed = tasks.filter(t => t.status === 'completed').length;
         const projects = new Set(tasks.map(t => t.category)).size;
 
-        if (this.selectors.statTotal) this.selectors.statTotal.textContent = total;
+        if (this.selectors.statTotal) this.selectors.statTotal.textContent = completed; // Slutförda should show completed count
         if (this.selectors.statActive) this.selectors.statActive.textContent = active;
         if (this.selectors.statProjects) this.selectors.statProjects.textContent = projects;
     },
 
     renderFilters(tasks = []) {
-        // Only update counts
-        const allCount = tasks.length;
-        this.selectors.countAll.textContent = allCount;
+        if (!this.selectors.desktopFilters) return;
 
-        // We could dynamically render categories here if needed, but they are static for now besides counts
-        // To be implemented fully if dynamic categories are a requirement
+        const categories = [
+            { id: 'all', label: 'Alla' },
+            ...Object.entries(this.categoryLabels).map(([id, label]) => ({ id, label }))
+        ];
+
+        this.selectors.desktopFilters.innerHTML = categories.map(cat => {
+            const isActive = this.currentFilter === cat.id;
+            const activeClasses = 'bg-teal-600 text-white shadow-md shadow-teal-500/20';
+            const inactiveClasses = 'bg-white text-slate-500 hover:bg-slate-50 border-slate-100';
+
+            return `
+                <button 
+                    data-filter="${cat.id}"
+                    class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-bold transition-all border whitespace-nowrap flex-shrink-0 ${isActive ? activeClasses : inactiveClasses}"
+                    aria-label="Filtrera efter ${cat.label}">
+                    ${cat.label}
+                </button>
+            `;
+        }).join('');
     },
 
     renderTasks(tasks) {
@@ -163,18 +221,12 @@ const UI = {
 
         if (filteredTasks.length === 0) {
             this.selectors.taskList.innerHTML = `
-                <div class="text-center py-16 bg-white rounded-2xl shadow-sm ring-1 ring-slate-100">
-                    <div class="bg-slate-50 p-6 rounded-full inline-block mb-6 relative">
-                        <i data-lucide="clipboard-x" class="h-12 w-12 text-slate-300"></i>
-                        <div class="absolute bottom-0 right-0 p-1.5 bg-primary rounded-full border-2 border-white">
-                            <i data-lucide="search" class="h-4 w-4 text-white"></i>
-                        </div>
+                <div class="text-center py-20 bg-white rounded-2xl border border-slate-100 shadow-sm animate-fade-in">
+                    <div class="bg-slate-50 p-5 rounded-full inline-block mb-4">
+                        <i data-lucide="search-x" class="h-10 w-10 text-slate-300"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-text tracking-tight mb-2">Inga uppgifter hittades</h3>
-                    <p class="text-text-secondary max-w-xs mx-auto">Vi kunde inte hitta några uppgifter som matchar ditt valda filter.</p>
-                    <button class="mt-6 text-primary font-medium hover:text-primary-dark transition-colors" onclick="document.querySelector('[data-filter=all]').click()">
-                        Rensa filter
-                    </button>
+                    <h3 class="text-lg font-bold text-slate-800 tracking-tight mb-1">Hittade inga uppgifter</h3>
+                    <p class="text-slate-400 text-sm max-w-xs mx-auto mb-6">Testa att byta kategori eller lägg till en ny uppgift.</p>
                 </div>
             `;
         }
@@ -187,18 +239,56 @@ const UI = {
         lucide.createIcons();
     },
 
+    showToast(message, type = 'success') {
+        if (!this.selectors.toastContainer) return;
+
+        const toast = document.createElement('div');
+        const bgColor = type === 'success' ? 'bg-teal-600' : 'bg-rose-500';
+        const icon = type === 'success' ? 'check-circle' : 'alert-circle';
+
+        toast.className = `${bgColor} text-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 animate-fade-in transition-all duration-300`;
+        toast.innerHTML = `
+            <i data-lucide="${icon}" class="h-4 w-4"></i>
+            <span class="font-bold text-sm leading-none">${message}</span>
+        `;
+
+        this.selectors.toastContainer.appendChild(toast);
+        lucide.createIcons();
+
+        setTimeout(() => {
+            toast.classList.add('opacity-0', 'translate-y-2');
+            setTimeout(() => toast.remove(), 310);
+        }, 3000);
+    },
+
+    setLoading(isLoading) {
+        if (!this.selectors.btnSaveTask) return;
+
+        if (isLoading) {
+            this.selectors.btnSaveTask.disabled = true;
+            this.selectors.btnSaveTask.classList.add('opacity-80', 'cursor-not-allowed');
+            this.selectors.btnSaveLoader.classList.remove('hidden');
+            this.selectors.btnSaveText.textContent = 'Sparar...';
+        } else {
+            this.selectors.btnSaveTask.disabled = false;
+            this.selectors.btnSaveTask.classList.remove('opacity-80', 'cursor-not-allowed');
+            this.selectors.btnSaveLoader.classList.add('hidden');
+            this.selectors.btnSaveText.textContent = 'Spara Uppgift';
+        }
+    },
+
     showError(message) {
         if (!this.selectors.taskList) return;
 
         this.selectors.taskList.innerHTML = `
-            <div class="text-center py-16 bg-white rounded-2xl shadow-sm ring-1 ring-red-100 animate-fade-in">
-                <div class="bg-red-50 p-6 rounded-full inline-block mb-6 relative">
-                    <i data-lucide="alert-circle" class="h-12 w-12 text-red-500"></i>
+            <div class="text-center py-20 bg-white rounded-2xl border border-rose-100 animate-fade-in">
+                <div class="bg-rose-50 p-5 rounded-full inline-block mb-4">
+                    <i data-lucide="alert-triangle" class="h-10 w-10 text-rose-400"></i>
                 </div>
-                <h3 class="text-xl font-bold text-text tracking-tight mb-2">Ett fel uppstod</h3>
-                <p class="text-text-secondary max-w-xs mx-auto mb-6">${this.escapeHtml(message)}</p>
-                <button class="px-6 py-2 bg-primary text-white rounded-xl shadow-md hover:bg-primary-dark transition-all" onclick="location.reload()">
-                    Ladda om sidan
+                <h3 class="text-lg font-bold text-slate-800 tracking-tight mb-1">Hoppsan, något gick fel</h3>
+                <p class="text-slate-400 text-sm max-w-xs mx-auto mb-6">${this.escapeHtml(message)}</p>
+                <button class="px-5 py-2 bg-teal-600 text-white rounded-xl text-sm font-bold shadow-md hover:bg-teal-700 transition-all" onclick="location.reload()">
+                    Försök igen
                 </button>
             </div>
         `;
@@ -207,102 +297,118 @@ const UI = {
 
     createTaskCard(task) {
         const div = document.createElement('div');
-        div.className = 'bg-white rounded-2xl shadow-sm ring-1 ring-slate-100 p-6 transition-all duration-300 hover:shadow-xl hover:shadow-blue-900/5 hover:-translate-y-1 group animate-fade-in relative overflow-hidden';
+        div.className = 'bg-white rounded-[1.5rem] sm:rounded-[2rem] shadow-sm border border-slate-100 p-4 sm:p-6 mb-4 animate-fade-in relative transition-all active:scale-[0.98]';
 
-        // Status Colors (for dots/badges instead of border)
-        const statusColors = {
-            'unresolved': 'bg-red-500',
-            'in-progress': 'bg-amber-500',
-            'completed': 'bg-emerald-500',
-            'overdue': 'bg-purple-500'
+        // Colors based on image
+        const categoryColors = {
+            'camera': 'bg-blue-100 text-blue-700',
+            'fire': 'bg-rose-100 text-rose-700',
+            'intrusion': 'bg-amber-100 text-amber-700',
+            'access': 'bg-blue-50 text-blue-600', // Image shows light blue for "PASSAGE / DÖRR"
+            'lock': 'bg-slate-100 text-slate-600'
         };
-        const statusDot = statusColors[task.status] || 'bg-slate-300';
+        const categoryPill = categoryColors[task.category] || 'bg-slate-50 text-slate-500';
 
-        // Progress Color
-        let progressColor = '#2563eb'; // primary
-        if (task.progress === 100) progressColor = '#10b981'; // success
-        else if (task.progress < 20) progressColor = '#ef4444'; // danger
+        const isCompleted = task.status === 'completed';
+        const statusColor = isCompleted ? 'text-emerald-500' : (task.status === 'in-progress' ? 'text-amber-500' : 'text-slate-400');
+        const statusText = isCompleted ? 'Completed' : (task.status === 'in-progress' ? 'In Progress' : 'Pending');
 
         const daysLeft = this.calculateDaysLeft(task.deadline);
-        const daysLeftClass = daysLeft < 0 ? 'text-danger font-bold' : (daysLeft <= 2 ? 'text-accent font-bold' : 'text-text-secondary');
-        const daysLeftText = daysLeft < 0 ? 'Försenad!' : (daysLeft === 0 ? 'Idag!' : `${daysLeft} dagar kvar`);
+        // Date formatting to match "08/10/2024" style or similar
+        const dateObj = new Date(task.deadline);
+        const formattedDate = dateObj.toLocaleDateString('sv-SE'); // YYYY-MM-DD usually, or use custom
 
         div.innerHTML = `
-            <div class="flex flex-col sm:flex-row gap-6 items-start sm:items-center relative z-10">
-                <!-- Progress -->
-                <div class="progress-ring shrink-0 scale-110" style="--progress: ${task.progress}%; --progress-color: ${progressColor}">
-                    <span class="progress-ring-text text-text font-bold">${task.progress}%</span>
+            <div class="flex gap-3 sm:gap-5">
+                <!-- Left: Progress Ring (Teal) -->
+                <div class="shrink-0 pt-1">
+                    <div class="relative w-12 h-12">
+                        <svg class="w-full h-full transform -rotate-90">
+                            <circle cx="24" cy="24" r="21" fill="transparent" stroke="#E2E8F0" stroke-width="2.5"></circle>
+                            <circle cx="24" cy="24" r="21" fill="transparent" stroke="#0D9488" stroke-width="2.5" 
+                                stroke-dasharray="${2 * Math.PI * 21}" 
+                                stroke-dashoffset="${2 * Math.PI * 21 * (1 - task.progress / 100)}" 
+                                stroke-linecap="round"></circle>
+                        </svg>
+                    </div>
                 </div>
 
-                <!-- Content -->
+                <!-- Right: Content -->
                 <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-3 mb-2">
-                        <span class="category-badge category-${task.category} flex items-center gap-1.5 py-1 px-2.5 rounded-lg shadow-sm">
-                            <i data-lucide="${this.icons[task.category] || this.icons.default}" class="h-3.5 w-3.5"></i>
-                            ${this.categoryLabels[task.category]}
-                        </span>
-                        <div class="flex items-center gap-1.5 text-xs text-text-secondary font-medium">
-                            <div class="w-1.5 h-1.5 rounded-full ${statusDot}"></div>
-                            <span class="capitalize">${task.status === 'in-progress' ? 'Pågående' : (task.status === 'unresolved' ? 'Ej påbörjad' : task.status)}</span>
+                    <!-- Top Row: Category + Status -->
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="${categoryPill} px-3 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-widest">${this.categoryLabels[task.category] || 'Allmänt'}</span>
+                        <div class="flex items-center gap-1.5">
+                            <div class="w-2 h-2 rounded-full ${isCompleted ? 'bg-emerald-500' : 'bg-slate-300'}"></div>
+                            <span class="text-xs font-medium text-slate-900">${statusText}</span>
                         </div>
                     </div>
-                    
-                    <h3 class="text-xl font-bold text-text truncate pr-8 tracking-tight mb-1 group-hover:text-primary transition-colors">${this.escapeHtml(task.title)}</h3>
-                    <p class="text-text-secondary text-sm line-clamp-2 leading-relaxed mb-4">${this.escapeHtml(task.description)}</p>
-                    
-                    <div class="flex items-center gap-6 text-sm border-t border-slate-50 pt-3 mt-1">
-                        <span class="text-text-secondary flex items-center gap-2">
-                            <i data-lucide="calendar" class="h-4 w-4 text-slate-400"></i> ${task.deadline}
-                        </span>
-                        <span class="${daysLeftClass} flex items-center gap-2">
-                            <i data-lucide="clock" class="h-4 w-4 ${daysLeft < 0 ? 'text-danger' : 'text-slate-400'}"></i> ${daysLeftText}
-                        </span>
-                        <span class="text-text-secondary flex items-center gap-2">
-                            <i data-lucide="hourglass" class="h-4 w-4 text-slate-400"></i> ${task.estimatedTime} min
-                        </span>
-                    </div>
-                </div>
 
-                <!-- Actions -->
-                <div class="flex items-center gap-2 self-end sm:self-center w-full sm:w-auto mt-2 sm:mt-0 justify-end opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
-                    <button class="p-2.5 text-text-secondary hover:text-primary hover:bg-blue-50 rounded-xl transition-all btn-edit hover:scale-105 active:scale-95" data-id="${task.id}" title="Redigera">
-                        <i data-lucide="edit-2" class="h-5 w-5"></i>
-                    </button>
-                    ${task.status !== 'completed' ? `
-                    <button class="px-4 py-2 bg-primary text-white hover:bg-primary-dark rounded-xl text-sm font-semibold transition-all shadow-md shadow-primary/20 hover:shadow-lg hover:-translate-y-0.5 btn-complete hover:scale-105 active:scale-95 flex items-center gap-2" data-id="${task.id}">
-                        <i data-lucide="check" class="h-4 w-4"></i> Klart
-                    </button>` : `
-                    <button class="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-xl text-sm font-semibold cursor-default flex items-center gap-2">
-                        <i data-lucide="check-circle" class="h-4 w-4"></i> Färdig
-                    </button>
-                    `}
-                    <button class="p-2.5 text-text-secondary hover:text-danger hover:bg-red-50 rounded-xl transition-all btn-delete hover:scale-105 active:scale-95" data-id="${task.id}" title="Ta bort">
-                        <i data-lucide="trash-2" class="h-5 w-5"></i>
-                    </button>
+                    <!-- Title & Description -->
+                    <h3 class="text-lg font-bold text-slate-900 mb-2 leading-tight">${this.escapeHtml(task.title)}</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed mb-6 line-clamp-2">${this.escapeHtml(task.description)}</p>
+
+                    <!-- Footer Info (Date/Time) -->
+                    <div class="flex items-center gap-6 text-sm font-medium text-slate-500 mb-6">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="calendar" class="h-4 w-4"></i> ${formattedDate}
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="clock" class="h-4 w-4"></i> 10:00 - 12:30
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons (Bottom Row - Styled like floating bubbles) -->
+                    <div class="flex items-center justify-center gap-3 sm:gap-4 pt-2">
+                        <!-- Edit (White Circle) -->
+                        <button class="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-900 hover:scale-110 transition-transform btn-edit" 
+                            data-id="${task.id}" aria-label="Redigera uppgift">
+                            <i data-lucide="pencil" class="h-4 w-4 sm:h-5 sm:w-5"></i>
+                        </button>
+
+                        <!-- Complete (Big Green) -->
+                        ${!isCompleted ? `
+                        <button class="h-12 w-16 sm:h-14 sm:w-20 rounded-[1.5rem] sm:rounded-[2rem] bg-emerald-500 shadow-lg shadow-emerald-500/20 flex items-center justify-center text-white hover:scale-105 transition-transform btn-complete" 
+                            data-id="${task.id}" aria-label="Markera som slutförd">
+                            <i data-lucide="check" class="h-5 w-5 sm:h-6 sm:w-6 stroke-[3]"></i>
+                        </button>
+                        ` : `
+                        <button class="h-12 w-16 sm:h-14 sm:w-20 rounded-[1.5rem] sm:rounded-[2rem] bg-emerald-100 flex items-center justify-center text-emerald-500 cursor-default" aria-label="Slutförd">
+                             <i data-lucide="check" class="h-5 w-5 sm:h-6 sm:w-6 stroke-[3]"></i>
+                        </button>
+                        `}
+
+                        <!-- Delete (White Circle) -->
+                        <button class="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-900 hover:scale-110 transition-transform btn-delete" 
+                            data-id="${task.id}" aria-label="Ta bort uppgift">
+                            <i data-lucide="trash-2" class="h-4 w-4 sm:h-5 sm:w-5"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
 
-        // Bind button events inside this card
-        div.querySelector('.btn-delete').addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (confirm('Är du säker på att du vill ta bort uppgiften?')) {
-                document.dispatchEvent(new CustomEvent('task-delete', { detail: task.id }));
-            }
-        });
+        // Card click for detail view (optional, sticking to modal for now)
+        // div.addEventListener('click', (e) => { // prevent opening modal on button clicks });
 
         div.querySelector('.btn-edit').addEventListener('click', (e) => {
             e.stopPropagation();
             this.openModal(task);
         });
 
+        div.querySelector('.btn-delete').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (confirm(`Vill du verkligen ta bort "${task.title}"?`)) {
+                document.dispatchEvent(new CustomEvent('task-delete', { detail: task.id }));
+            }
+        });
+
         const completeBtn = div.querySelector('.btn-complete');
-        if (completeBtn) {
+        if (completeBtn && !isCompleted) {
             completeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                // Optimistically update
                 task.progress = 100;
-                task.status = 'completed';
+                task.status = 'completed'; // Update generic status
                 document.dispatchEvent(new CustomEvent('task-update', { detail: task }));
             });
         }
@@ -315,8 +421,7 @@ const UI = {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const diffTime = d - today;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays;
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     },
 
     openModal(task = null) {
@@ -348,6 +453,28 @@ const UI = {
         this.selectors.modal.classList.add('opacity-0');
         setTimeout(() => {
             this.selectors.modal.classList.add('hidden');
-        }, 200);
+            this.clearErrors();
+        }, 300);
+    },
+
+    showInputError(fieldId, show = true) {
+        const input = document.getElementById(`task-${fieldId}`);
+        const error = document.getElementById(`error-${fieldId}`);
+
+        if (!input || !error) return;
+
+        if (show) {
+            input.classList.add('border-rose-500', 'ring-4', 'ring-rose-500/10');
+            input.classList.remove('border-slate-100', 'focus:border-teal-500', 'focus:ring-teal-500/5');
+            error.classList.remove('hidden');
+        } else {
+            input.classList.remove('border-rose-500', 'ring-4', 'ring-rose-500/10');
+            input.classList.add('border-slate-100', 'focus:border-teal-500', 'focus:ring-teal-500/5');
+            error.classList.add('hidden');
+        }
+    },
+
+    clearErrors() {
+        ['title', 'deadline'].forEach(field => this.showInputError(field, false));
     }
 };
